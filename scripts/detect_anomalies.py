@@ -2,6 +2,7 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dense
 import pandas as pd
 import numpy as np
+import tensorflow as tf
 
 # Load preprocessed training data
 data = pd.read_csv("preprocessed_training_data.csv")
@@ -30,3 +31,12 @@ model.fit(X_train, y_train, epochs=10, batch_size=32)
 # Save the model as .h5 file
 model.save("anomaly_detector.h5")
 print("Model training complete. Model saved as 'anomaly_detector.h5'.")
+
+# Convert the trained model to TensorFlow Lite format
+converter = tf.lite.TFLiteConverter.from_keras_model(model)
+tflite_model = converter.convert()
+
+# Save the TensorFlow Lite model
+with open("anomaly_detector.tflite", "wb") as f:
+    f.write(tflite_model)
+print("TensorFlow Lite model saved as 'anomaly_detector.tflite'.")
