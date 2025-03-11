@@ -34,7 +34,7 @@ print("Model saved as 'models/anomaly_detector.h5'.")
 converter = tf.lite.TFLiteConverter.from_keras_model(model)
 
 # Fix dynamic LSTM issues in TensorFlow Lite
-converter.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS, tf.lite.OpsSet.SELECT_TF_OPS]
+converter.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS]
 converter._experimental_lower_tensor_list_ops = False
 converter.experimental_enable_resource_variables = True  # Fixes resource variable issue
 
