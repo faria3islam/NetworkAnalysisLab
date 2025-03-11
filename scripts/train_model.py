@@ -5,7 +5,7 @@ import numpy as np
 import tensorflow as tf
 
 # Load preprocessed normal training data
-data = pd.read_csv("data/preprocessed_training_data.csv")
+data = pd.read_csv("data/preprocessed_data.csv")
 
 # Prepare sequences for LSTM Autoencoder
 sequence_length = 10
