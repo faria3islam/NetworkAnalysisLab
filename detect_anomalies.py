@@ -1,28 +1,32 @@
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import LSTM, Dense
 import pandas as pd
 import numpy as np
-from tensorflow.keras.models import load_model
-import matplotlib.pyplot as plt
 
-# Load the preprocessed data
-data = pd.read_csv("data/preprocessed_data.csv")
+# Load preprocessed training data
+data = pd.read_csv("preprocessed_training_data.csv")
+sequence_length = 10
 
-# Prepare the data for the LSTM model
-sequence_length = 10  # Adjust the sequence length as needed
-sequences = [data.iloc[i:i+sequence_length].values for i in range(len(data) - sequence_length)]
-sequences = np.array(sequences)
+# Prepare sequences for LSTM
+sequences = []
+for i in range(len(data) - sequence_length):
+    sequences.append(data.iloc[i:i+sequence_length].values)
 
-# Load the pre-trained TensorFlow model
-model = load_model("models/anomaly_detector.h5")
+X_train = np.array(sequences)
+y_train = np.zeros((X_train.shape[0], 1))  # Assuming all data is normal for unsupervised training
 
-# Predict anomalies
-predictions = model.predict(sequences)
-print("Anomaly Scores:", predictions[:10])  # Print the first 10 anomaly scores
+# Build the LSTM model
+model = Sequential([
+    LSTM(128, input_shape=(X_train.shape[1], X_train.shape[2]), return_sequences=False),
+    Dense(1, activation='sigmoid')  # Output a single score for anomaly detection
+])
 
-# Visualize anomaly scores
-plt.plot(predictions, label="Anomaly Scores")
-plt.axhline(y=0.5, color='r', linestyle='--', label="Threshold")
-plt.title("Anomaly Detection Scores")
-plt.xlabel("Sequence Index")
-plt.ylabel("Anomaly Score")
-plt.legend()
-plt.show()
+# Compile the model
+model.compile(optimizer='adam', loss='binary_crossentropy')
+
+# Train the model
+model.fit(X_train, y_train, epochs=10, batch_size=32)
+
+# Save the model as .h5 file
+model.save("anomaly_detector.h5")
+print("Model training complete. Model saved as 'anomaly_detector.h5'.")
