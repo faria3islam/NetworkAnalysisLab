@@ -4,13 +4,13 @@ import pandas as pd
 import numpy as np
 import tensorflow as tf
 
-# Load preprocessed normal training data
+# Load preprocessed training data
 data = pd.read_csv("data/preprocessed_data.csv")
 
 # Prepare sequences for LSTM Autoencoder
 sequence_length = 10
 sequences = [data.iloc[i:i+sequence_length].values for i in range(len(data) - sequence_length)]
-X_train = np.array(sequences)  # No need for y_train since we are reconstructing input
+X_train = np.array(sequences, dtype=np.float32)  # Ensure numeric format
 
 # Build LSTM Autoencoder model
 model = Sequential([
@@ -32,9 +32,15 @@ print("Model saved as 'models/anomaly_detector.h5'.")
 
 # Convert the model to TensorFlow Lite
 converter = tf.lite.TFLiteConverter.from_keras_model(model)
-tflite_model = converter.convert()
 
-# Save the TensorFlow Lite model
+# Fix dynamic LSTM issues in TensorFlow Lite
+converter.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS, tf.lite.OpsSet.SELECT_TF_OPS]
+converter._experimental_lower_tensor_list_ops = False
+converter.experimental_enable_resource_variables = True  # Fixes resource variable issue
+
+# Convert and save the TensorFlow Lite model
+tflite_model = converter.convert()
 with open("models/anomaly_detector.tflite", "wb") as f:
     f.write(tflite_model)
+
 print("Model saved as 'models/anomaly_detector.tflite'.")
