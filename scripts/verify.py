@@ -1,36 +1,36 @@
-from tensorflow.keras.models import load_model
+import tflite_runtime.interpreter as tflite
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.preprocessing import MinMaxScaler
 
-# Load preprocessed validation data
-data = pd.read_csv("validation_data.csv")  # Replace with your actual validation data file
+# Load validation data
+data = pd.read_csv("data/validation_data.csv")
 
-# Normalize the data (just like during training)
-scaler = MinMaxScaler()
-data['length'] = scaler.fit_transform(data[['length']])
-
-# Prepare sequences for LSTM model
-sequence_length = 10  # Adjust this based on your model's design
+# Prepare sequences
+sequence_length = 10
 sequences = [data.iloc[i:i+sequence_length].values for i in range(len(data) - sequence_length)]
-sequences = np.array(sequences)
+sequences = np.array(sequences, dtype=np.float32)
 
-# Load the pre-trained model
-model = load_model("models/anomaly_detector.h5")
+# Load TensorFlow Lite model
+interpreter = tflite.Interpreter(model_path="models/anomaly_detector.tflite")
+interpreter.allocate_tensors()
 
-# Predict anomalies
-predictions = model.predict(sequences)
+# Get input and output details
+input_details = interpreter.get_input_details()
+output_details = interpreter.get_output_details()
 
-# Print a few anomaly scores for reference
-print("First 10 Anomaly Scores:")
-print(predictions[:10])
+# Run inference
+predictions = []
+for sequence in sequences:
+    interpreter.set_tensor(input_details[0]['index'], [sequence])
+    interpreter.invoke()
+    predictions.append(interpreter.get_tensor(output_details[0]['index'])[0])
 
 # Plot anomaly scores
 plt.figure(figsize=(10, 6))
 plt.plot(predictions, label="Anomaly Scores")
 plt.axhline(y=0.5, color='r', linestyle='--', label="Threshold (0.5)")
-plt.title("Anomaly Detection Results")
+plt.title("Validation Results - Anomaly Detection")
 plt.xlabel("Sequence Index")
 plt.ylabel("Anomaly Score")
 plt.legend()
