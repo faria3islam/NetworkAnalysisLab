@@ -19,20 +19,28 @@ interpreter.allocate_tensors()
 input_details = interpreter.get_input_details()
 output_details = interpreter.get_output_details()
 
+# Ensure input shape is correct
+input_shape = input_details[0]['shape']  # Expected shape: (1, sequence_length, features)
+print("Expected input shape:", input_shape)
+
+# Adjust sequences if needed
+if len(input_shape) == 3 and input_shape[0] == 1:  # Model expects batch_size=1
+    sequences = np.expand_dims(sequences, axis=0)  # Add batch dimension
+
 # Make predictions
 predictions = []
 for sequence in sequences:
-    interpreter.set_tensor(input_details[0]['index'], [sequence])
+    interpreter.set_tensor(input_details[0]['index'], np.expand_dims(sequence, axis=0))  # Ensure correct shape
     interpreter.invoke()
     predictions.append(interpreter.get_tensor(output_details[0]['index'])[0])
 
 # Visualize the results
 plt.figure(figsize=(10, 6))
-plt.plot(predictions, label="Anomaly Scores")
+plt.plot(predictions, label="Reconstruction Error")
 plt.axhline(y=0.5, color='r', linestyle='--', label="Threshold (0.5)")
 plt.title("Anomaly Detection Results")
 plt.xlabel("Sequence Index")
-plt.ylabel("Anomaly Score")
+plt.ylabel("Error Score")
 plt.legend()
 plt.grid(True)
 plt.show()
